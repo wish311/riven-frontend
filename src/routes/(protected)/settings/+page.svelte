@@ -50,6 +50,9 @@
         fields: string[];
     }[];
 
+    let categorySearch = "";
+    let visibleCategories = categorized;
+
     const normalize = (value?: string) => value?.toLowerCase() ?? "";
 
     const categorizeSchema = () => {
@@ -91,6 +94,21 @@
 
     $: categorizeSchema();
 
+    const matchesSearch = (value: string) =>
+        normalize(value).includes(normalize(categorySearch.trim()));
+
+    $: visibleCategories = categorized.filter(
+        (category) =>
+            categorySearch.trim().length === 0 ||
+            matchesSearch(category.title) ||
+            matchesSearch(category.description) ||
+            category.fields.some((field) => matchesSearch(field.replaceAll("_", " ")))
+    );
+
+    const scrollToFormTop = () => {
+        document.getElementById("settings-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
     const meta = createMeta<ActionData, PageData>().form;
 
     // @ts-expect-error - Schema is provided by page data
@@ -118,13 +136,13 @@
 
 <div class="mt-14 h-full w-full px-6 pb-12 pt-6 md:px-12">
     <div class="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[320px,1fr]">
-        <section class="space-y-4 rounded-2xl border bg-card/60 p-6 shadow-sm backdrop-blur">
+        <section class="space-y-4 rounded-2xl border bg-card/60 p-6 shadow-sm backdrop-blur lg:sticky lg:top-24 lg:h-fit">
             <div class="space-y-3">
                 <div class="space-y-1">
                     <p class="text-sm font-semibold text-foreground">Quick tips</p>
                     <p class="text-sm text-muted-foreground">
-                        Settings are validated before saving. Check the field descriptions and category summaries to see
-                        where to adjust scrapers, filters, integrations, and general behavior.
+                        Use the navigator to jump to scrapers, filters, integrations, or general controls. Each field
+                        validates before saving, so you can tweak confidently.
                     </p>
                 </div>
 
@@ -132,20 +150,20 @@
                     <ul class="grid gap-3 text-sm text-muted-foreground">
                         <li class="flex gap-2">
                             <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
-                            <span>Use the category cards to jump straight to scrapers, filters, or general controls.</span>
+                            <span>Use the category cards to jump straight to what you want to edit.</span>
                         </li>
                         <li class="flex gap-2">
                             <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
-                            <span>Save once after reviewing each category. Validation keeps edits safe before submission.</span>
+                            <span>Review categories one by one, then save when you are done.</span>
                         </li>
                         <li class="flex gap-2">
                             <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
-                            <span>Experiment freely; errors will highlight only the fields that need attention.</span>
+                            <span>Errors call out only the fields that need attention.</span>
                         </li>
                     </ul>
                 </div>
 
-                <div class="space-y-2 rounded-xl border bg-background/60 p-4">
+                <div class="space-y-3 rounded-xl border bg-background/60 p-4">
                     <div class="flex items-center justify-between gap-3">
                         <div class="space-y-1">
                             <p class="text-sm font-semibold">Categories</p>
@@ -154,11 +172,23 @@
                         <div class="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">Guided</div>
                     </div>
 
+                    <label class="flex items-center gap-2 rounded-lg border bg-background/70 px-3 py-2 text-xs text-muted-foreground focus-within:border-primary">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">Find</span>
+                        <input
+                            class="h-8 w-full bg-transparent text-sm text-foreground outline-none"
+                            type="text"
+                            placeholder="Search scrapers, filters, integrations"
+                            bind:value={categorySearch}
+                        />
+                    </label>
+
                     <div class="grid gap-3">
                         {#if categorized.length === 0}
                             <p class="text-sm text-muted-foreground">Loading categories from the schema...</p>
+                        {:else if visibleCategories.length === 0}
+                            <p class="text-sm text-muted-foreground">No matches. Clear the search to see everything.</p>
                         {:else}
-                            {#each categorized as category (category.id)}
+                            {#each visibleCategories as category (category.id)}
                                 <button
                                     type="button"
                                     class="flex w-full flex-col gap-1 rounded-xl border bg-background/80 px-3 py-3 text-left shadow-sm transition hover:border-primary/70 hover:bg-background"
@@ -176,7 +206,7 @@
 
                                         target?.scrollIntoView({ behavior: "smooth", block: "start" });
                                     }}
-                                >
+        >
                                     <div class="flex items-center justify-between gap-2">
                                         <p class="text-sm font-semibold text-foreground">{category.title}</p>
                                         <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
@@ -212,6 +242,20 @@
                 </p>
             </header>
 
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-background/50 px-4 py-3 text-sm text-muted-foreground">
+                <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-primary"></span>
+                    <span>Jump around by category or return to the form start.</span>
+                </div>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-semibold text-foreground transition hover:border-primary/70 hover:text-primary"
+                    on:click={scrollToFormTop}
+                >
+                    Back to top
+                </button>
+            </div>
+
             <div class="rounded-xl border bg-background/60 p-4">
                 <p class="text-sm text-muted-foreground">
                     Changes are kept in the form until you save, so you can experiment freely. If anything is missing or
@@ -228,7 +272,7 @@
                 {/each}
             </div>
 
-            <div class="overflow-hidden rounded-2xl border bg-background/70 p-1 shadow-inner">
+            <div id="settings-form" class="overflow-hidden rounded-2xl border bg-background/70 p-1 shadow-inner">
                 <BasicForm {form} method="POST" class="grid gap-4 p-2 md:p-4"></BasicForm>
             </div>
         </section>
