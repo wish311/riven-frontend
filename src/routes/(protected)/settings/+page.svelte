@@ -92,9 +92,7 @@
         ];
     };
 
-    $effect(() => {
-        categorizeSchema();
-    });
+    $: categorizeSchema();
 
     const matchesSearch = (value: string) =>
         normalize(value).includes(normalize(categorySearch.trim()));
