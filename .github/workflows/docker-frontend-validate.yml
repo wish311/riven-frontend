@@ -1,0 +1,27 @@
+name: Dockerfile Validate Build
+
+on:
+  push:
+    branches: ["main", "work", "develop"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for validation
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: riven-frontend:test-validate
+          load: true
+          cache-from: type=gha,scope=docker-validate
+          cache-to: type=gha,mode=max,scope=docker-validate

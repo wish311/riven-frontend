@@ -63,12 +63,19 @@
         return externalMetaData[normalizedKey];
     }
 
-    let showTrailer = $state(
-        !data.mediaDetails?.details.backdrop_path && !!data.mediaDetails?.details.trailer
+    let trailerOverride: boolean | null = $state(null);
+
+    const showTrailer = $derived(
+        trailerOverride ??
+            (!data.mediaDetails?.details.backdrop_path && !!data.mediaDetails?.details.trailer)
     );
 
+    $effect(() => {
+        trailerOverride = null;
+    });
+
     function toggleTrailer() {
-        showTrailer = !showTrailer;
+        trailerOverride = !showTrailer;
     }
 
     let selectedSeason: string | undefined = $state("1");
